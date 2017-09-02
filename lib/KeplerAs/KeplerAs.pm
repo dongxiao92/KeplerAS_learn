@@ -588,7 +588,14 @@ sub Extract
             if (exists($jumpOp{$inst->{op}}) && $inst->{ins} =~ m'(0x[0-9a-f]+)')
             {
                 #the target of inst is '0x....' 
+                #bug:when the target of BRA is actually a ctrlcode, no target label will be output.
                 my $target = hex($1);
+                #added by dongxiao
+                #if target is a ctrlcode,sub target with 8.
+                if ( ($target/8) %8 == 0 ){
+                    $target = $target-8;
+                }
+                #end
                 #if the tar get of BRA is itself or the inst just before this inst,exit FILE loop
                 last FILE if $inst->{op} eq 'BRA' && ($target == $inst->{num}|| $target == $inst->{num}-8);
 
