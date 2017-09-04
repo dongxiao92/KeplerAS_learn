@@ -593,7 +593,7 @@ sub Extract
                 #added by dongxiao
                 #if target is a ctrlcode,sub target with 8.
                 if ( ($target/8) %8 == 0 ){
-                    $target = $target-8;
+                    $target = $target+8;
                 }
                 #end
                 #if the tar get of BRA is itself or the inst just before this inst,exit FILE loop
