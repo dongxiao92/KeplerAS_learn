@@ -280,7 +280,9 @@ our %grammar =
     { type => $cmpT,  code => 0xb500000000000001, rule => qr"^$pred?FCMP$fcmp$ftz $r0, $r8, $f20, $r39;"o,            },
     ],
     FFMA     => [
-                  { type => $x32T,  code => 0xcc00000000000002, rule => qr"^$pred?FFMA$ftz$rnd$sat $r0, $r8, $cr20, $r39;"o,         },
+                  #{ type => $x32T,  code => 0xcc00000000000002, rule => qr"^$pred?FFMA$ftz$rnd$sat $r0, $r8, $cr20, $r39;"o,         },
+                  #FFMA can carry .s flag.
+                  { type => $x32T,  code => 0xcc00000000000002, rule => qr"^$pred?FFMA$ftz$rnd$sat$S $r0, $r8, $cr20, $r39;"o,         },
                   { type => $x32T,  code => 0xcc00000000000002, rule => qr"^$pred?FFMA$ftz$rnd$sat $r0, $r8, $r39s20, $c20s39;"o,     },
                   { type => $x32T,  code => 0x9400000000000001, rule => qr"^$pred?FFMA$ftz$rnd$sat $r0, $r8, $f20, $r39;"o,     },
                 ],
@@ -386,7 +388,9 @@ our %grammar =
     ],
     SHF       => [
                    { type => $shftT,  code => 0xdfc0000000000002, rule => qr"^$pred?SHF\.L$shf $r0, $r8, $r20, $r39;"o,                  },
-                   { type => $shftT,  code => 0xb7c0000000000001, rule => qr"^$pred?SHF\.L$shf $r0, $r8, $i20, $r39;"o,                  },
+                   #{ type => $shftT,  code => 0xb7c0000000000001, rule => qr"^$pred?SHF\.L$shf $r0, $r8, $i20, $r39;"o,                  },
+                   #SHF.L can carry .s
+                   { type => $shftT,  code => 0xb7c0000000000001, rule => qr"^$pred?SHF\.L$shf$S $r0, $r8, $i20, $r39;"o,                  },
                    { type => $shftT,  code => 0xe7c0000000000002, rule => qr"^$pred?SHF\.R$shf $r0, $r8, $r20, $r39;"o,                  },
                    { type => $shftT,  code => 0xc7c0000000000001, rule => qr"^$pred?SHF\.R$shf $r0, $r8, $i20, $r39;"o,                  },
                  ],
