@@ -155,6 +155,7 @@ sub new
         #why is 0x46?I think it's inequal to the size computed from template.
         read $fh, $data, 0x46;
         #slice of a reference of hash
+        #the entry of elfHdrc[1] and elfHdrc[2] is equal.
         @{$elfHdr}{@{$elfHdrC[$class]}} = unpack $elfHdrT[$class], $data;
 
         $cubin->{Class} = 64;
@@ -175,7 +176,7 @@ sub new
 
         my %prgHdr = (Indx => $_ - 1);
         #hash切片,取prgHdr中key为{}中数组指定的所有位置
-        @prgHdr{@{$prgHdrC[$class]}} = unpack $prgHdrT[$class], $data;
+        @prgHdr{@{$prgHdrC[$class]}} = unpack $prgHdrT[$class], $ ;
         #\%prgHdr is reference of %prgHdr,cubin->{prgHdrs} is a reference of array.the element of the array is reference of hash
         push @{$cubin->{prgHdrs}}, \%prgHdr;
     }
@@ -587,10 +588,10 @@ sub write
 
     my $elfHdr = $cubin->{elfHdr};
     my $class  = $elfHdr->{fileClass};
-
+    #write elfHdr based on elfHdr template
     print $fh pack $elfHdrT[$class], @{$elfHdr}{@{$elfHdrC[$class]}};
     my $pos = $elfHdr->{ehSize};
-
+    #write secHdr after elfHdr.Need to notice each hdrHdr may has its own padding requirement.
     foreach my $secHdr (@{$cubin->{secHdrs}})
     {
         next if $secHdr->{size} == 0 || $secHdr->{type} == 8;
@@ -611,7 +612,7 @@ sub write
     {
         print $fh pack $secHdrT[$class], @{$secHdr}{@{$secHdrC[$class]}};
     }
-
+    #write prgHdr
     foreach my $prgHdr (@{$cubin->{prgHdrs}})
     {
         print $fh pack $prgHdrT[$class], @{$prgHdr}{@{$prgHdrC[$class]}};

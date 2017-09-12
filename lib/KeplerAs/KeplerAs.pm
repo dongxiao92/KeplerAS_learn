@@ -56,7 +56,8 @@ sub Assemble
         }
         elsif ($line =~ m'^([a-zA-Z]\w*):')
         {
-            #eg,TARGET1:
+            #this branch handle line link'TARGET1:'
+            # @instructs+0 will return the length of @instructs,just like $instructs
             $labels{$1} = @instructs+0;
         }
         else
@@ -443,15 +444,18 @@ sub Test
 
             $inst->{reuse} = $fileReuse;
             my $fileCode = $inst->{code};
-            #handling all branch inst?
+            #handling brach instructions which has relative(not absolute target) target.
             if (exists $relOffset{$inst->{op}})
             {
+                #transform value in sass to value encoded in inst. 
                 $inst->{inst} =~ s/(0x[0-9a-f]+)/sprintf '0x%06x', ((hex($1) - $inst->{num} - 8) & 0xffffff)/e;
             }
 
             my $match = 0;
             foreach my $gram (@{$grammar{$inst->{op}}})
             {
+                #try to parse inst using every grammer defined in $grammer{op}
+                #next will interpret current loop,restart a new loop,that is jump to foreach
                 my $capData = parseInstruct($inst->{inst}, $gram) or next;
                 my @caps;
 
@@ -476,6 +480,7 @@ sub Test
                     $fail++;
                 }
                 $match = 1;
+                #exit current loop,that is,jump to unless
                 last;
             }
             unless ($match)
@@ -519,9 +524,11 @@ sub Test
 
 sub Extract
 {
+    # $in is a sass file
     my ($in, $out, $params) = @_;
-
+    #inverse constants, mapping location to param name.
     my %paramMap;
+    #mapping param name to location in cubin
     my %constants =
     (
         blockDimX => 'c[0x0][0x28]',
@@ -591,12 +598,15 @@ sub Extract
                 #bug:when the target of BRA is actually a ctrlcode, no target label will be output.
                 my $target = hex($1);
                 #added by dongxiao
-                #if target is a ctrlcode,sub target with 8.
+                #if target is a ctrlcode,add target with 8.
                 if ( ($target/8) %8 == 0 ){
                     $target = $target+8;
                 }
                 #end
-                #if the tar get of BRA is itself or the inst just before this inst,exit FILE loop
+                #if the tar get of BRA is itself or the inst just before this inst,exit FILE loop.So the generated asm file do not contain BRA after exit if 
+                #this condition is satisfied.
+                #This condition will be satisfied when get the ending of sass file.
+                #In all benchmark sass,there is a BRA following exit whose target is itself.
                 last FILE if $inst->{op} eq 'BRA' && ($target == $inst->{num}|| $target == $inst->{num}-8);
 
                 my $label = $labels{$target};
@@ -608,6 +618,7 @@ sub Extract
                 #replace target in number format to label
                 $inst->{ins} =~ s/(0x[0-9a-f]+)/$label/;
             }
+            #if inst uses locations in constant section
             $inst->{ins} =~ s/(c\[0x0\])\s*(\[0x[0-9a-f]+\])/ $paramMap{$1 . $2} || $1 . $2 /eg;
 
             $inst->{ctrl} = printCtrl($ctrl);
@@ -621,7 +632,9 @@ sub Extract
         printf $out "%s %5s%s\n", @{$inst}{qw(ctrl pred ins)};
     }
 }
-
+#modifier 'm' make $ and ^ can match adjacent '\n'
+#modifier 's' make . can match adjacent '\n'
+#*? means non-greedy,.* can match any character excrpt for '\n',so it may cause mismatch if .* match too many characters.
 my $CommentRe  = qr'^[\t ]*<COMMENT>.*?^\s*</COMMENT>\n?'ms;
 my $IncludeRe  = qr'^[\t ]*<INCLUDE\s+file="([^"]+)"\s*/?>\n?'ms;
 my $CodeRe     = qr'^[\t ]*<CODE(\d*)>(.*?)^\s*<\/CODE\1>\n?'ms;
@@ -655,9 +668,11 @@ sub Preprocess
         { $removeRegMap = 1; }
     else
         { $regMap = {}; }
-
+    #modifier 'g' means substitute all occurences
+    #modifier 'e' means the replace part is perl code.The result of executing it is the real str used to replace.
+    #repace <INCLUDE file="filename" > to content of file.
     1 while $file =~ s|$IncludeRe| IncludeFile($1, $include) |eg;
-
+    #delete comment
     $file =~ s|$CommentRe||g;
 
     1 while $file =~ s|$CodeRe|
@@ -668,7 +683,7 @@ sub Preprocess
         my ($type, $code) = ($1, $2);
         my $out = eval "package KeplerAs::KeplerAs::CODE; $code";
         $@ ? die("CODE:\n$code\n\nError: $@\n") : $type eq "+" ? $out : "" |eg;
-
+    #remove CONSTANT_MAPPING,store the mapping info to $constMap
     $file =~ s/$ConstMapRe/ setConstMap($constMap, $1) /eg;
 
     my @newFile;
@@ -951,13 +966,15 @@ sub setConstMap
 
     foreach my $line (split "\n", $constMapText)
     {
+        #remove begining spaqces
         $line =~ s|^\s+||;
         $line =~ s{(?:#|//).*}{};
+        #remove tailing spaces
         $line =~ s|\s+$||;
         next unless $line =~ m'\S';
 
         my ($name, $value) = split '\s*:\s*', $line;
-
+        #map param_name to location,eg c[0x0][...]
         $constMap->{$name} = $value;
     }
     return;
@@ -1065,12 +1082,13 @@ sub setRegisterMap
 
 sub preProcessLine
 {
+    #remove spaces in the beggining
     $_[0] =~ s|^\s+||;
 
     my $val = shift;
 
     $val =~ s{(?:#|//).*}{};
-
+    # \S means any non-space character
     return $val =~ m'\S';
 }
 

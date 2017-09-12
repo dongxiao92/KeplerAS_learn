@@ -1347,6 +1347,7 @@ sub parseInstruct
 {
     my ($inst, $grammar) = @_;
     return unless $inst =~ $grammar->{rule};
+    # %+ is hash mapping captured name to content in last match.
     my %capData = %+;
     return \%capData;
 }
@@ -1373,7 +1374,7 @@ sub genReuseCode
     $reuse |= $reuseCodes{$_} foreach grep $capData->{$_}, keys %reuseCodes;
     return $reuse;
 }
-
+#generate code and reuse according to defination in KeplerAsGrammer(grammer,flags...)
 sub genCode
 {
     my ($op, $grammar, $capData, $test) = @_;
@@ -1409,7 +1410,7 @@ sub genCode
             push @$test, $rcode if $test;
         }
     }
-
+    #why use xnor to compute code?
     foreach my $capture (keys %$capData)
     {
         if (exists $constCodes{$capture})
@@ -1419,6 +1420,7 @@ sub genCode
         {
             unless ($capture eq 'r20' && exists $capData->{r39s20})
             {
+                #operands map name to sub. '->' means call corresponding method
                 $code ^= $operands{$capture}->($capData->{$capture});
                 push @$test, $capture if $test;
             }
@@ -1456,7 +1458,7 @@ my $CommRe = qr'(?<comment>.*)';
 sub processAsmLine
 {
     my ($line, $lineNum) = @_;
-
+    #parse asm code line
     if ($line =~ m"^$CtrlRe(?<space>\s+)$InstRe$CommRe"o)
     {
         return {

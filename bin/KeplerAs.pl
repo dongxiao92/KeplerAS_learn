@@ -68,7 +68,7 @@ elsif ($mode =~ /^\-?\-e/i)
     my $kernelName;
     if ($ARGV[0] =~ /^\-?\-k/i)
     {
-        #is given kernel name
+        #if given kernel name
         shift;
         $kernelName = shift or usage();
     }
@@ -169,15 +169,17 @@ elsif ($mode =~ /^\-?\-i/i)
     my $file;
     if (open my $fh, $asmFile)
     {
+        # set $/=undef('local $/' actually do this) will enable <>  read all contents in $fh to a scalar.
         local $/;
         $file = <$fh>;
         close $fh;
     }
     else { die "$asmFile: $!" }
-
+    #only store volume and dir
     my ($vol,$dir) = File::Spec->splitpath($asmFile);
     my $include = [$vol, $dir];
-
+    # xxx unless cond <=> if not cond xxxx
+    #in list context, m// will return matched part in '()' is successfully matched.
     ($kernelName) = $file =~ /^# Kernel: (\w+)/ unless $kernelName;
     die "asm file missing kernel name or is badly formatted" unless $kernelName;
 
